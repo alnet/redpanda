@@ -10,7 +10,10 @@
 package acl
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"sort"
 	"strings"
 
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/api/admin"
@@ -18,10 +21,15 @@ import (
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/out"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 func newUserCommand(fs afero.Fs) *cobra.Command {
-	var apiUrls []string
+	var (
+		apiUrls []string
+		format 	string
+	)
+
 	cmd := &cobra.Command{
 		Use:   "user",
 		Short: "Manage SASL users",
@@ -44,7 +52,7 @@ redpanda section of your redpanda.yaml.
 
 	cmd.AddCommand(newCreateUserCommand(fs))
 	cmd.AddCommand(newDeleteUserCommand(fs))
-	cmd.AddCommand(newListUsersCommand(fs))
+	cmd.AddCommand(newListUsersCommand(fs, format))
 	return cmd
 }
 
@@ -202,8 +210,12 @@ delete any ACLs that may exist for this user.
 	return cmd
 }
 
-func newListUsersCommand(fs afero.Fs) *cobra.Command {
-	return &cobra.Command{
+type UserCollection struct {
+	Users []string `json:"users"`
+}
+
+func newListUsersCommand(fs afero.Fs, format string) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List SASL users",
@@ -218,11 +230,40 @@ func newListUsersCommand(fs afero.Fs) *cobra.Command {
 			users, err := cl.ListUsers(cmd.Context())
 			out.MaybeDie(err, "unable to list users: %v", err)
 
-			tw := out.NewTable("Username")
-			defer tw.Flush()
-			for _, u := range users {
-				tw.Print(u)
+			sort.Slice(users, func(i, j int) bool {
+				l, r := users[i], users[j]
+				return l < r
+			 },
+		  )
+
+			var userCollection = UserCollection{Users: users}
+
+			switch format {
+			case "json":
+				jsonBytes, err := json.Marshal(userCollection)
+				if err != nil {
+					fmt.Printf("Failed to martial json for output. Error: %s", err)
+					os.Exit(1)
+				}
+				fmt.Println(string(jsonBytes))
+			case "yaml":
+				yamlBytes, err := yaml.Marshal(userCollection)
+				if err != nil {
+					fmt.Printf("Failed to martial yaml for output. Error: %s", err)
+					os.Exit(1)
+				}
+				fmt.Println(string(yamlBytes))
+			case "text":
+				tw := out.NewTable("Username")
+				defer tw.Flush()
+				for _, u := range userCollection.Users {
+					tw.Print(u)
+				}
+			default:
+				fmt.Printf("Unsupported format: '%s'. Suported formats are 'text', 'json', and 'yaml'\n", format)
 			}
 		},
 	}
+	cmd.Flags().StringVar(&format, "format", "text", "Output format (text, json, yaml). Default: text")
+	return cmd
 }

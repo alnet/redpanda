@@ -69,7 +69,7 @@ resource names:
 
 			var printDeletionsHeader bool
 			if !noConfirm || dry {
-				describeReqResp(adm, printAllFilters, true, b)
+				describeReqResp(adm, printAllFilters, true, b, "text")
 				fmt.Println()
 
 				confirmed, err := out.Confirm("Confirm deletion of the above matching ACLs?")
