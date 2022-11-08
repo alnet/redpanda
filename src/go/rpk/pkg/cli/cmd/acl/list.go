@@ -110,7 +110,6 @@ func describeReqResp(
 	types.Sort(results)
 
 	filteredAndDescribedResults := filteredAndDescribedResults{}
-
 	for _, result := range results {
 		// Filter portion of the result
 		newACL := filteredAndDescribed{
@@ -150,8 +149,8 @@ func describeReqResp(
 		// If any filters failed, or if all filters are
 		// requested, we print the filter section.
 		printFailedFilters := false
-		for _, f := range results {
-			if f.Err != nil {
+		for _, f := range filteredAndDescribedResults.Results {
+			if f.Filter.Err != nil {
 				printFailedFilters = true
 				break
 			}

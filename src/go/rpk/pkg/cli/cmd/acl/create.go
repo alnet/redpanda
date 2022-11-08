@@ -11,7 +11,6 @@ package acl
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/config"
@@ -20,7 +19,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/twmb/types"
-	"gopkg.in/yaml.v3"
 )
 
 func newCreateCommand(fs afero.Fs) *cobra.Command {
@@ -67,30 +65,19 @@ Allow write permissions to user buzz to transactional id "txn":
 			}
 			types.Sort(results)
 
-			createdACLS:= aclWithMessageCollectionForStructedPrint{}
+			createdACLS:= createdACLCollection{}
 			for _, newACL:= range results {
 				createdACLS.AddACL(newACL)
 			}
 
-			switch a.format {
-			case "text":
+			if a.format != "text" {
+				out.StructredPrint[any](createdACLS, a.format)
+			} else {
 				tw := out.NewTable(headersWithError...)
 				defer tw.Flush()
 				for _, acl := range createdACLS.ACLS{
 					tw.PrintStructFields(acl)
 				}
-			case "json":
-				jsonBytes, err := json.Marshal(createdACLS)
-				if err != nil {
-					out.MaybeDie(err, "Failed to martial json for output. Error: %s", err)
-				}
-				fmt.Println(string(jsonBytes))
-			case "yaml":
-				yamlBytes, err := yaml.Marshal(createdACLS)
-				if err != nil {
-					out.MaybeDie(err, "Failed to martial yaml for output. Error: %s", err)
-				}
-				fmt.Println(string(yamlBytes))
 			}
 		},
 	}

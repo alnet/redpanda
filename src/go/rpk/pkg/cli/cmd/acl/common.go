@@ -78,7 +78,7 @@ type (
 		Message             string                      `json:"message" yaml:"message"`
 	}
 
-	// Used for json/yaml formatted output in "rpk acl lists"
+	// Used for json/yaml formatted output in "rpk acl lists|delete"
 	describedACLsResult struct {
 		Principal *string `json:"principal" yaml:"principal"` // Principal is the optional user that was used in this filter.
 		Host      *string `json:"host" yaml:"host"`           // Host is the optional host that was used in this filter.
@@ -94,22 +94,34 @@ type (
 
 	filteredAndDescribed struct {
 		Filter describedACLsResult `json:"filter" yaml:"filter"`
-		ACLS   []acl               `json:"described_acls" yaml:"described_acls"`
-	}
-
-	filteredAndDescribedResults struct {
-		Results []filteredAndDescribed `json:"filtered_acls" yaml:"filtered_acls"`
-	}
-	aclWithMessageCollectionForStructedPrint struct {
-		ACLS []aclWithMessage `json:"acls" yaml:"acls"`
+		ACLS   []acl               `json:"acls" yaml:"acls"`
 	}
 )
 
-func (collection *filteredAndDescribedResults) addFilterAndDescribed(data filteredAndDescribed) {
-	collection.Results = append(collection.Results, data)
+// filteredAndDescribedResults and methods
+type filteredAndDescribedResults struct {
+	Results []filteredAndDescribed `json:"filtered_acls" yaml:"filtered_acls"`
+}
+func (collection *filteredAndDescribedResults) addFilterAndDescribed(filteredACL filteredAndDescribed) {
+	collection.Results = append(collection.Results, filteredACL)
+}
+// =======================
+
+// deletedACLCollection and methods
+type deletedACLCollection struct {
+	Deleted []filteredAndDescribed `json:"deleted_acls" yaml:"deleted_acls"`
+}
+func (collection *deletedACLCollection) AddACL(deletedACL filteredAndDescribed) {
+	collection.Deleted = append(collection.Deleted, deletedACL)
 }
 
-func (collection *aclWithMessageCollectionForStructedPrint) AddACL(newACL kadm.CreateACLsResult) {
+// =======================
+
+// createdACLCollection and methods
+type createdACLCollection struct {
+		ACLS []aclWithMessage `json:"created_acls" yaml:"created_acls"`
+}
+func (collection *createdACLCollection) AddACL(newACL kadm.CreateACLsResult) {
 	collection.ACLS = append(collection.ACLS,
 		aclWithMessage{
 			newACL.Principal,
@@ -123,6 +135,7 @@ func (collection *aclWithMessageCollectionForStructedPrint) AddACL(newACL kadm.C
 		},
 	)
 }
+// =======================
 
 // A helper function to ensure we print an empty string.
 func unptr(str *string) string {
