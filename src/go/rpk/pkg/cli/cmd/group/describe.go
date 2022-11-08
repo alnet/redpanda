@@ -11,7 +11,6 @@ package group
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -22,7 +21,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/twmb/franz-go/pkg/kadm"
-	"gopkg.in/yaml.v3"
 )
 
 // DescribedGroup contains data from a describe groups response for a single group.
@@ -168,25 +166,10 @@ information about the members.
 				return
 			}
 
-			switch format {
-			case "text":
+			if format != "text" {
+				out.StructredPrint[any](groupCollection, format)
+			} else {
 				printDescribed(groupCollection)
-			case "json":
-				jsonBytes, err := json.Marshal(groupCollection)
-
-				if err != nil {
-					out.MaybeDie(err, "Failed to martial json for output. Error: %s", err)
-				}
-				fmt.Println(string(jsonBytes))
-			case "yaml":
-				yamlBytes, err := yaml.Marshal(groupCollection)
-
-				if err != nil {
-					out.MaybeDie(err, "Failed to martial yaml for output. Error: %s", err)
-				}
-				fmt.Println(string(yamlBytes))
-			default:
-				fmt.Printf("Unsupported format: '%s'. Suported formats are 'text', 'json', and 'yaml'\n", format)
 			}
 		},
 	}

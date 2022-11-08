@@ -12,7 +12,6 @@ package cluster
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
@@ -24,7 +23,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/twmb/franz-go/pkg/kadm"
-	"gopkg.in/yaml.v3"
 )
 
 func newMetadataCommand(fs afero.Fs) *cobra.Command {
@@ -242,23 +240,9 @@ func PrintTopics(topics kadm.TopicDetails, internal, detailed bool, format strin
 		return
 	}
 
-	switch format {
-	case "json":
-		jsonBytes, err := json.Marshal(topicsCollection)
-
-		if err != nil {
-			out.MaybeDie(err, "Failed to martial json for output. Error: %s", err)
-		}
-		fmt.Println(string(jsonBytes))
-	case "yaml":
-		yamlBytes, err := yaml.Marshal(topicsCollection)
-
-		if err != nil {
-			out.MaybeDie(err, "Failed to martial yaml for output. Error: %s", err)
-		}
-		fmt.Println(string(yamlBytes))
-
-	case "text":
+	if format != "text" {
+		out.StructredPrint[any](topicsCollection, format)
+	}else {
 		buf := new(bytes.Buffer)
 		buf.Grow(512)
 		defer func() { os.Stdout.Write(buf.Bytes()) }()
@@ -337,8 +321,6 @@ func PrintTopics(topics kadm.TopicDetails, internal, detailed bool, format strin
 			}
 			tw.Flush()
 		}
-	default:
-		fmt.Printf("Unsupported format: '%s'. Suported formats are 'text', 'json', and 'yaml'\n", format)
 	}
 }
 

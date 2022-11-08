@@ -11,7 +11,6 @@ package acl
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/config"
@@ -21,7 +20,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/types"
-	"gopkg.in/yaml.v3"
 )
 
 func newListCommand(fs afero.Fs) *cobra.Command {
@@ -146,20 +144,9 @@ func describeReqResp(
 		filteredAndDescribedResults.addFilterAndDescribed(newACL)
 	}
 
-	switch format {
-	case "json":
-		jsonBytes, err := json.Marshal(filteredAndDescribedResults)
-		if err != nil {
-			out.MaybeDie(err, "Failed to martial json for output. Error: %s", err)
-		}
-		fmt.Println(string(jsonBytes))
-	case "yaml":
-		yamlBytes, err := yaml.Marshal(filteredAndDescribedResults)
-		if err != nil {
-			out.MaybeDie(err, "Failed to martial yaml for output. Error: %s", err)
-		}
-		fmt.Println(string(yamlBytes))
-	case "text":
+	if format != "text" {
+		out.StructredPrint[any](filteredAndDescribedResults, format)
+	} else {
 		// If any filters failed, or if all filters are
 		// requested, we print the filter section.
 		printFailedFilters := false
@@ -186,8 +173,6 @@ func describeReqResp(
 			out.Section("matches")
 		}
 		printDescribedACLs(filteredAndDescribedResults)
-	default:
-		fmt.Printf("Unsupported format: '%s'. Suported formats are 'text', 'json', and 'yaml'\n", format)
 	}
 }
 

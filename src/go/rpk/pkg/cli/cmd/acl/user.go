@@ -10,9 +10,7 @@
 package acl
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
@@ -21,7 +19,6 @@ import (
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/out"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 func newUserCommand(fs afero.Fs) *cobra.Command {
@@ -238,29 +235,14 @@ func newListUsersCommand(fs afero.Fs, format string) *cobra.Command {
 
 			var userCollection = UserCollection{Users: users}
 
-			switch format {
-			case "json":
-				jsonBytes, err := json.Marshal(userCollection)
-				if err != nil {
-					fmt.Printf("Failed to martial json for output. Error: %s", err)
-					os.Exit(1)
-				}
-				fmt.Println(string(jsonBytes))
-			case "yaml":
-				yamlBytes, err := yaml.Marshal(userCollection)
-				if err != nil {
-					fmt.Printf("Failed to martial yaml for output. Error: %s", err)
-					os.Exit(1)
-				}
-				fmt.Println(string(yamlBytes))
-			case "text":
+			if format != "text" {
+				out.StructredPrint[any](userCollection, format)
+			} else {
 				tw := out.NewTable("Username")
 				defer tw.Flush()
 				for _, u := range userCollection.Users {
 					tw.Print(u)
 				}
-			default:
-				fmt.Printf("Unsupported format: '%s'. Suported formats are 'text', 'json', and 'yaml'\n", format)
 			}
 		},
 	}

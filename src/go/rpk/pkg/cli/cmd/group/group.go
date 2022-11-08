@@ -12,8 +12,6 @@ package group
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/cli/cmd/common"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/config"
@@ -21,7 +19,6 @@ import (
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/out"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 func NewCommand(fs afero.Fs) *cobra.Command {
@@ -160,20 +157,9 @@ groups, or to list groups that need to be cleaned up.
 				})
 			}
 
-			switch format {
-			case "json":
-				jsonBytes, err := json.Marshal(groupCollection)
-				if err != nil {
-					out.MaybeDie(err, "Failed to martial json for output. Error: %s", err)
-				}
-				fmt.Println(string(jsonBytes))
-			case "yaml":
-				yamlBytes, err := yaml.Marshal(groupCollection)
-				if err != nil {
-					out.MaybeDie(err, "Failed to martial yaml for output. Error: %s", err)
-				}
-				fmt.Println(string(yamlBytes))
-			case "text":
+			if format != "text" {
+				out.StructredPrint[any](groupCollection, format)
+			} else {
 				out.HandleShardError("ListGroups", err)
 				tw := out.NewTable("BROKER", "GROUP")
 				defer tw.Flush()
@@ -183,8 +169,6 @@ groups, or to list groups that need to be cleaned up.
 						Group  string
 					}{g.Coordinator, g.Group})
 				}
-			default:
-				fmt.Printf("Unsupported format: '%s'. Suported formats are 'text', 'json', and 'yaml'\n", format)
 			}
 		},
 	}
