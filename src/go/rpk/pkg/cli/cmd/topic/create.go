@@ -27,6 +27,7 @@ import (
 type topic struct {
 	Name    string `json:"name" yaml:"name"`
 	Message string `json:"message" yaml:"message"`
+	Error   bool   `json:"error" yaml:"error"`
 }
 type topicsCollection struct {
 	Topics []topic `json:"topics" yaml:"topics"`
@@ -101,7 +102,11 @@ the cleanup.policy=compact config option set.
 			resp, err := req.RequestWith(context.Background(), cl)
 			out.MaybeDie(err, "unable to create topics %v: %v", topics, err)
 
-			var exit1 bool
+			var (
+				exit1  			bool
+				createError bool
+			)
+
 			defer func() {
 				if exit1 {
 					os.Exit(1)
@@ -120,11 +125,15 @@ the cleanup.policy=compact config option set.
 					} else {
 						msg = err.Error()
 					}
-					exit1 = true
+					// If we're exiting in error, toggle error as well so in structured print mode there's a way to see an eror happen without parsing the message.
+					// While we could just re-use exit1 here, mixing concerns is not a great idea.
+					createError = true
+					exit1       = true
 				}
 				createdTopics.AddTopic(topic{
 					Name:    t.Topic,
 					Message: msg,
+					Error:   createError,
 				})
 			}
 

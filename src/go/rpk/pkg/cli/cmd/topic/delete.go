@@ -69,15 +69,18 @@ For example,
 			out.MaybeDie(err, "unable to issue delete topics request: %v", err)
 
 			topicsCollection := topicsCollection{}
-			
+			var deleteError bool
 			for _, t := range resps.Sorted() {
 				msg := "OK"
 				if t.Err != nil {
+					// If error msg is not okay, set bool so stuctured output doesn't require consumer to parse message to detect errors.
+					deleteError = true
 					msg = t.Err.Error()
 				}
 				topicsCollection.AddTopic(topic{
-					Name: t.Topic,
+					Name:    t.Topic,
 					Message: msg,
+					Error:   deleteError,
 				})
 			}
 
